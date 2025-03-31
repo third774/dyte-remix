@@ -106,7 +106,7 @@ interface Summarization {
 }
 
 export async function getOrCreateMeetingById(
-  id: string,
+  title: string,
   { url = defaultUrl, Authorization }: { url?: string; Authorization: string }
 ) {
   const options = {
@@ -119,7 +119,7 @@ export async function getOrCreateMeetingById(
 
   const updatedUrl = new URL(url);
   if (!updatedUrl.searchParams.has("search")) {
-    updatedUrl.searchParams.set("search", id);
+    updatedUrl.searchParams.set("search", title);
   }
 
   const response = await fetch(updatedUrl, options);
@@ -138,7 +138,7 @@ export async function getOrCreateMeetingById(
         Authorization,
       },
       body: JSON.stringify({
-        title: "string",
+        title,
         preferred_region: "ap-south-1",
         record_on_start: false,
         live_stream_on_start: false,
