@@ -1,63 +1,123 @@
 import {
+  createMeeting,
   createParticipantToken,
-  getOrCreateMeetingById,
+  getMeeting,
 } from "~/utils/dyteApi.server";
 import type { Route } from "./+types/meeting";
-import { redirect } from "react-router";
+import { data, redirect } from "react-router";
 
-import { DyteMeeting } from "@dytesdk/react-ui-kit";
-import { DyteProvider, useDyteClient } from "@dytesdk/react-web-core";
+import { useDyteClient } from "@dytesdk/react-web-core";
+import DyteClient from "@dytesdk/web-core";
 import { useEffect } from "react";
 import { nanoid } from "nanoid/non-secure";
+import { getCookie } from "~/utils/getCookie.server";
 import { getCookieSessionStorage } from "~/utils/session.server";
+import { DyteMeeting } from "@dytesdk/react-ui-kit";
+import { useNavigate } from "react-router";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
+    { title: "Dyte Meeting Room" },
+    {
+      name: "description",
+      content: "Join your video conference with Dyte and Remix",
+    },
   ];
 }
 
 export async function loader({ request, context, params }: Route.LoaderArgs) {
-  const storage = getCookieSessionStorage(context);
-  const session = await storage.getSession(request.headers.get("cookie"));
-  const name = session.get("name");
-  const { meetingName } = params;
-  if (!meetingName || !name) {
-    return redirect(`/`);
+  const name = await getCookie("name", { request, context });
+  let token: string | undefined = await getCookie("dyte-token", {
+    request,
+    context,
+  });
+  const { meetingId } = params;
+  if (!meetingId) {
+    return redirect("/");
   }
-  if (meetingName === "new") {
+
+  if (!name) {
+    return redirect(`/?redirectTo=/meeting/${meetingId}`);
+  }
+  if (meetingId === "new") {
     return redirect(`/meeting/${nanoid(8)}`);
   }
-  const meeting = await getOrCreateMeetingById(meetingName, {
+
+  let meeting = await getMeeting(meetingId, {
     Authorization: context.cloudflare.env.DYTE_AUTH_HEADER,
   });
-  if (meetingName !== meeting.id) {
+  if (!meeting) {
+    meeting = await createMeeting(meetingId, {
+      Authorization: context.cloudflare.env.DYTE_AUTH_HEADER,
+    });
+  }
+  if (meetingId !== meeting.id) {
     return redirect(`/meeting/${meeting.id}`);
   }
-  const participant = await createParticipantToken(meeting.id, {
-    Authorization: context.cloudflare.env.DYTE_AUTH_HEADER,
-  });
 
-  return { meeting, participant };
+  const storage = getCookieSessionStorage(context);
+  const session = await storage.getSession();
+  if (!token) {
+    const participant = await createParticipantToken({
+      name,
+      meetingId: meeting.id,
+      Authorization: context.cloudflare.env.DYTE_AUTH_HEADER,
+    });
+    token = participant.token;
+    session.set("dyte-token", participant.token);
+  }
+
+  const expires = new Date();
+  expires.setDate(expires.getDate() + 1);
+
+  return data(
+    { meeting, token },
+    {
+      headers: {
+        Cookie: await storage.commitSession(session, {
+          path: `/meeting/${meetingId}`,
+          expires,
+        }),
+      },
+    }
+  );
 }
 
-export default function Home({ loaderData }: Route.ComponentProps) {
+export default function Meeting({ loaderData }: Route.ComponentProps) {
   const [meeting, initMeeting] = useDyteClient();
 
   useEffect(() => {
     initMeeting({
-      authToken: loaderData.participant.token,
+      authToken: loaderData.token,
       defaults: {
         audio: false,
         video: false,
       },
     });
-  }, []);
+  }, [
+    loaderData.token,
+    // initMeeting seems to change on every render, so we're excluding it for now
+    // this should be fixed in @dytesdk/react-web-core, then we can uncomment
+    // initMeeting
+  ]);
+
+  useNavigateOnLeave("/", meeting);
 
   return (
-    <DyteProvider value={meeting}>
-      <DyteMeeting mode="fill" meeting={meeting} showSetupScreen={false} />
-    </DyteProvider>
+    <div className="h-full">
+      <DyteMeeting showSetupScreen={false} meeting={meeting} />
+    </div>
   );
+}
+
+function useNavigateOnLeave(to: string, meeting?: DyteClient) {
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!meeting) return;
+    const handler = () => navigate(to);
+    meeting.self.on("roomLeft", handler);
+    return () => {
+      meeting.self.off("roomLeft", handler);
+    };
+  }, [to, meeting]);
 }
