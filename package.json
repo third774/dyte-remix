@@ -9,7 +9,7 @@
     "preview": "pnpm run build && vite preview",
     "start": "wrangler dev",
     "typecheck": "react-router typegen && tsc -b",
-    "cf-typegen": "wrangler types",
+    "cf-typegen": "wrangler types --include-env=false",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -29,7 +29,6 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^0.1.11",
-    "@cloudflare/workers-types": "^4.20250327.0",
     "@react-router/dev": "^7.3.0",
     "@tailwindcss/vite": "^4.0.0",
     "@testing-library/jest-dom": "^6.6.3",
