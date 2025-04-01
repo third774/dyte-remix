@@ -11,6 +11,6 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noEmit": true,
-    "types": ["@cloudflare/workers-types/2023-07-01"]
+    "types": ["node", "@cloudflare/workers-types/2023-07-01"]
   }
 }
