@@ -1,4 +1,6 @@
-const defaultUrl = "https://api.dyte.io/v2/meetings";
+const defaultBaseUrl = "https://api.dyte.io/";
+
+const meetingsPath = "v2/meetings";
 
 interface MeetingApiResponse {
   success: boolean;
@@ -106,8 +108,11 @@ interface Summarization {
 }
 
 export async function getMeeting(
-  title: string,
-  { url = defaultUrl, Authorization }: { url?: string; Authorization: string }
+  titleOrId: string,
+  {
+    baseUrl: baseUrl = defaultBaseUrl,
+    Authorization,
+  }: { baseUrl?: string; Authorization: string }
 ) {
   const options = {
     method: "GET",
@@ -117,9 +122,9 @@ export async function getMeeting(
     },
   };
 
-  const updatedUrl = new URL(url);
+  const updatedUrl = new URL(baseUrl + meetingsPath);
   if (!updatedUrl.searchParams.has("search")) {
-    updatedUrl.searchParams.set("search", title);
+    updatedUrl.searchParams.set("search", titleOrId);
   }
 
   const response = await fetch(updatedUrl, options);
@@ -147,7 +152,10 @@ export interface CreateParticpantData {
 
 export async function createMeeting(
   title: string,
-  { url = defaultUrl, Authorization }: { url?: string; Authorization: string }
+  {
+    baseUrl = defaultBaseUrl,
+    Authorization,
+  }: { baseUrl?: string; Authorization: string }
 ) {
   const options = {
     method: "POST",
@@ -159,7 +167,7 @@ export async function createMeeting(
     body: JSON.stringify({ title }),
   };
 
-  const response = await fetch(url, options);
+  const response = await fetch(baseUrl + meetingsPath, options);
   const data = await response.json<CreateMeetingApiResponse>();
   return data.data;
 }
@@ -168,11 +176,11 @@ export async function createParticipantToken({
   name,
   userId,
   meetingId,
-  url = defaultUrl,
+  baseUrl = defaultBaseUrl,
   Authorization,
 }: {
   name: string;
-  url?: string;
+  baseUrl?: string;
   Authorization: string;
   meetingId: string;
   userId: string;
@@ -191,7 +199,9 @@ export async function createParticipantToken({
     }),
   };
 
-  const resolvedUrl = new URL(`${url}/${meetingId}/participants`);
+  const resolvedUrl = new URL(
+    `${baseUrl + meetingsPath}/${meetingId}/participants`
+  );
   const response = await fetch(resolvedUrl, options);
   const data = await response.json<CreateParticipantResponse>();
   return data.data;

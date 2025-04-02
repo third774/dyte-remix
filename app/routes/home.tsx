@@ -1,16 +1,19 @@
 import { getCookieSessionStorage } from "~/utils/session.server";
 import type { Route } from "./+types/home";
 import {
+  data,
   Form,
   redirect,
+  useActionData,
   useNavigation,
-  useViewTransitionState,
 } from "react-router";
 import { Button } from "~/ui/Button";
 import { getCookie } from "~/utils/getCookie.server";
 import { Input } from "~/ui/Input";
 import { generateSlug } from "random-word-slugs";
 import { useState } from "react";
+import { createMeeting, getMeeting } from "~/utils/dyteApi.server";
+import { isValidUUID } from "~/utils/isValidUuid";
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Dyte React Router Demo" }];
@@ -41,10 +44,39 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
   if (action === "create-meeting") {
     const meetingName = formData.get("meetingName");
-    throw redirect(`/meeting/${meetingName}`);
+    if (typeof meetingName !== "string") {
+      return new Response("meetingName missing or malformed", { status: 400 });
+    }
+    let meeting = await getMeeting(meetingName, {
+      Authorization: context.cloudflare.env.DYTE_AUTH_HEADER,
+      baseUrl: context.cloudflare.env.DYTE_BASE_URL,
+    });
+    if (!meeting) {
+      meeting = await createMeeting(meetingName, {
+        Authorization: context.cloudflare.env.DYTE_AUTH_HEADER,
+        baseUrl: context.cloudflare.env.DYTE_BASE_URL,
+      });
+    }
+    throw redirect(`/meeting/${meeting.id}`);
   }
   if (action === "join-meeting") {
     const meetingId = formData.get("meetingId");
+    if (typeof meetingId !== "string") {
+      return new Response("Missing meetingId", { status: 400 });
+    }
+    if (!isValidUUID(meetingId)) {
+      return new Response("meetingId is not a valid uuid", { status: 400 });
+    }
+
+    const meeting = await getMeeting(meetingId, {
+      Authorization: context.cloudflare.env.DYTE_AUTH_HEADER,
+      baseUrl: context.cloudflare.env.DYTE_BASE_URL,
+    });
+    if (!meeting) {
+      return data({
+        meetingNotFound: true,
+      });
+    }
     throw redirect(`/meeting/${meetingId}`);
   } else if (action === "set-name") {
     const username = formData.get("name");
@@ -132,7 +164,7 @@ function CreateMeetingForm({
           disabled={isNavigating}
           pending={isNavigating}
         >
-          Create Meeting
+          {isNavigating ? "Creating" : "Create Meeting"}
         </Button>
       </Form>
     </div>
@@ -140,6 +172,10 @@ function CreateMeetingForm({
 }
 
 function JoinMeetingForm() {
+  const data = useActionData();
+  const navigation = useNavigation();
+  const isNavigating = Boolean(navigation.location);
+  console.log({ data });
   return (
     <Form method="post">
       <label
@@ -153,8 +189,13 @@ function JoinMeetingForm() {
           <Input id="meetingId" name="meetingId" required />
           <input name="action" value="join-meeting" type="hidden" />
         </div>
-        <Button type="submit" variant="primary" className="w-full">
-          Join Meeting
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={isNavigating}
+          pending={isNavigating}
+        >
+          {isNavigating ? "Joining" : "Join Meeting"}
         </Button>
       </div>
     </Form>

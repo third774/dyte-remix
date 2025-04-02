@@ -8,11 +8,12 @@ import { data, redirect } from "react-router";
 
 import { useDyteClient } from "@dytesdk/react-web-core";
 import DyteClient from "@dytesdk/web-core";
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { nanoid } from "nanoid/non-secure";
 import { DyteMeeting } from "@dytesdk/react-ui-kit";
 import { useNavigate } from "react-router";
 import { getCookieSessionStorage } from "~/utils/session.server";
+import { isValidUUID } from "~/utils/isValidUuid";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -30,7 +31,7 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
   const name: string | undefined = await storage.get("name");
   let userId: string | undefined = await storage.get("user-id");
   const { meetingId } = params;
-  if (!meetingId) {
+  if (!meetingId || !isValidUUID(meetingId)) {
     return redirect("/");
   }
 
@@ -43,10 +44,12 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
 
   let meeting = await getMeeting(meetingId, {
     Authorization: context.cloudflare.env.DYTE_AUTH_HEADER,
+    baseUrl: context.cloudflare.env.DYTE_BASE_URL,
   });
   if (!meeting) {
     meeting = await createMeeting(meetingId, {
       Authorization: context.cloudflare.env.DYTE_AUTH_HEADER,
+      baseUrl: context.cloudflare.env.DYTE_BASE_URL,
     });
   }
   if (meetingId !== meeting.id) {
@@ -62,11 +65,17 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
     userId,
     meetingId: meeting.id,
     Authorization: context.cloudflare.env.DYTE_AUTH_HEADER,
+    baseUrl: context.cloudflare.env.DYTE_BASE_URL,
   });
   const token = participant.token;
 
   return data(
-    { meeting, token },
+    {
+      meeting,
+      token,
+      dyteBaseUrl:
+        context.cloudflare.env.DYTE_BASE_URL ?? "https://api.dyte.io/",
+    },
     {
       headers: {
         "Set-Cookie": await session.commitSession(storage),
@@ -79,7 +88,12 @@ export default function Meeting({ loaderData }: Route.ComponentProps) {
   const [meeting, initMeeting] = useDyteClient();
 
   useEffect(() => {
+    const hostname = new URL(loaderData.dyteBaseUrl).hostname.replace(
+      "api.",
+      ""
+    );
     initMeeting({
+      baseURI: hostname,
       authToken: loaderData.token,
       defaults: {
         audio: false,
@@ -88,6 +102,7 @@ export default function Meeting({ loaderData }: Route.ComponentProps) {
     });
   }, [
     loaderData.token,
+    loaderData.dyteBaseUrl,
     // initMeeting seems to change on every render, so we're excluding it for now
     // this should be fixed in @dytesdk/react-web-core, then we can uncomment
     // initMeeting
@@ -112,4 +127,12 @@ function useNavigateOnLeave(to: string, meeting?: DyteClient) {
       meeting.self.off("roomLeft", handler);
     };
   }, [to, meeting]);
+}
+
+function useIsClientSide() {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 }
