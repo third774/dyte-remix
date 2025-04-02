@@ -9,8 +9,6 @@ import {
 
 import type { Route } from "./+types/root";
 import "./app.css";
-import { getCookieSessionStorage } from "./utils/session.server";
-import { redirect } from "react-router";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -24,23 +22,6 @@ export const links: Route.LinksFunction = () => [
     href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
   },
 ];
-
-export const loader = async ({ request, context }: Route.LoaderArgs) => {
-  const session = getCookieSessionStorage(context);
-  const storage = await session.getSession(request.headers.get("Cookie"));
-  const userId = await storage.get("user-id");
-  if (userId) {
-    return null;
-  } else {
-    const userId = crypto.randomUUID();
-    storage.set("user-id", userId);
-    return redirect("/", {
-      headers: {
-        "Set-Cookie": await session.commitSession(storage),
-      },
-    });
-  }
-};
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (

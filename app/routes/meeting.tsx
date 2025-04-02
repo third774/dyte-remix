@@ -10,10 +10,9 @@ import { useDyteClient } from "@dytesdk/react-web-core";
 import DyteClient from "@dytesdk/web-core";
 import { useEffect } from "react";
 import { nanoid } from "nanoid/non-secure";
-import { getCookie } from "~/utils/getCookie.server";
 import { DyteMeeting } from "@dytesdk/react-ui-kit";
 import { useNavigate } from "react-router";
-import { getUserId } from "~/utils/getUserId.server";
+import { getCookieSessionStorage } from "~/utils/session.server";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -26,8 +25,10 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export async function loader({ request, context, params }: Route.LoaderArgs) {
-  const name = await getCookie("name", { request, context });
-  const userId = await getUserId({ request, context });
+  const session = getCookieSessionStorage(context);
+  const storage = await session.getSession(request.headers.get("Cookie"));
+  const name: string | undefined = await storage.get("name");
+  let userId: string | undefined = await storage.get("user-id");
   const { meetingId } = params;
   if (!meetingId) {
     return redirect("/");
@@ -52,6 +53,10 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
     return redirect(`/meeting/${meeting.id}`);
   }
 
+  if (!userId) {
+    userId = crypto.randomUUID();
+  }
+
   const participant = await createParticipantToken({
     name,
     userId,
@@ -60,7 +65,14 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
   });
   const token = participant.token;
 
-  return data({ meeting, token });
+  return data(
+    { meeting, token },
+    {
+      headers: {
+        "Set-Cookie": await session.commitSession(storage),
+      },
+    }
+  );
 }
 
 export default function Meeting({ loaderData }: Route.ComponentProps) {
