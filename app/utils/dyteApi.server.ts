@@ -6,10 +6,10 @@ const meetingsPath = "v2/meetings";
 
 interface MeetingApiResponse {
   success: boolean;
-  data: DataItem[];
+  data: Meeting[];
   paging: Paging;
 }
-export interface DataItem {
+export interface Meeting {
   id: string;
   title: string;
   preferred_region: string;
