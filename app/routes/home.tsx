@@ -74,7 +74,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 
 function Header() {
   return (
-    <h1 className="text-2xl font-bold text-center mb-6 text-gray-800 dark:text-white">
+    <h1 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">
       Dyte Remix Demo
     </h1>
   );
@@ -86,7 +86,7 @@ function UserHeader({ name }: { name: string }) {
       <p className="text-lg font-medium text-gray-800 dark:text-white">
         Hello, <span className="font-bold">{name}</span>!
       </p>
-      <Form method="post" className="flex">
+      <Form method="post">
         <input type="hidden" name="action" value="remove-name" />
         <Button type="submit" variant="ghost" size="sm">
           Change Name
@@ -105,7 +105,7 @@ function CreateMeetingForm({
     <div>
       <label
         htmlFor="meetingName"
-        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
       >
         Meeting Name
       </label>
@@ -116,7 +116,7 @@ function CreateMeetingForm({
           defaultValue={defaultMeetingName}
         />
         <input type="hidden" name="action" value="create-meeting" />
-        <Button type="submit" variant="primary" className="whitespace-nowrap">
+        <Button type="submit" variant="primary" className="whitespace-nowrap" autoFocus>
           Create Meeting
         </Button>
       </Form>
@@ -127,7 +127,7 @@ function CreateMeetingForm({
 function JoinMeetingForm() {
   return (
     <details className="w-full">
-      <summary className="cursor-pointer text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-center">
+      <summary className="cursor-pointer text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
         Or join a meeting
       </summary>
       <Form method="post" className="mt-4">
@@ -135,7 +135,7 @@ function JoinMeetingForm() {
           <div>
             <label
               htmlFor="meetingId"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
               Meeting ID
             </label>
@@ -156,27 +156,26 @@ function NameForm({ redirectTo }: { redirectTo?: string | null }) {
 
   return (
     <>
-      <p className="text-center text-gray-600 dark:text-gray-300 mb-6">
-        Enter your name to join a meeting
+      <p className="text-gray-600 dark:text-gray-300 mb-6">
+        What is your name?
       </p>
-
       <Form method="post" className="space-y-4">
         <div className="space-y-2">
           <label
             htmlFor="name"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
-            Your Name
+            Name
           </label>
           <input type="hidden" name="action" value="set-name" />
           {redirectTo && (
             <input type="hidden" name="redirectTo" value={redirectTo} />
           )}
-          <Input id="name" name="name" required />
+          <Input id="name" name="name" required autoFocus />
         </div>
         <div className="pt-2">
           <Button type="submit" variant="primary" className="w-full">
-            {hasRedirectSearchParam ? "Continue to Meeting" : "Set Name"}
+            {hasRedirectSearchParam ? "Continue to Meeting" : "Submit"}
           </Button>
         </div>
       </Form>
