@@ -4,7 +4,7 @@
  */
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "remix-dyte",
+  "name": "react-router-dyte",
   "compatibility_flags": ["nodejs_compat"],
   "compatibility_date": "2025-02-24",
   "main": "./workers/app.ts",

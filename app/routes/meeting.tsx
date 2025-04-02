@@ -19,7 +19,7 @@ export function meta({}: Route.MetaArgs) {
     { title: "Dyte Meeting Room" },
     {
       name: "description",
-      content: "Join your video conference with Dyte and Remix",
+      content: "Join your video conference with Dyte and React Router",
     },
   ];
 }

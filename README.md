@@ -1,4 +1,4 @@
-# Dyte Remix Example
+# Dyte React Router Example
 
 ## Setup
 

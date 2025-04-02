@@ -1,13 +1,19 @@
 import { getCookieSessionStorage } from "~/utils/session.server";
 import type { Route } from "./+types/home";
-import { Form, redirect } from "react-router";
+import {
+  Form,
+  redirect,
+  useNavigation,
+  useViewTransitionState,
+} from "react-router";
 import { Button } from "~/ui/Button";
 import { getCookie } from "~/utils/getCookie.server";
 import { Input } from "~/ui/Input";
 import { generateSlug } from "random-word-slugs";
+import { useState } from "react";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Dyte Remix Demo" }];
+  return [{ title: "Dyte React Router Demo" }];
 }
 
 export async function loader({ context, request }: Route.LoaderArgs) {
@@ -75,7 +81,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 function Header() {
   return (
     <h1 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">
-      Dyte Remix Demo
+      Dyte React Router Demo
     </h1>
   );
 }
@@ -101,6 +107,8 @@ function CreateMeetingForm({
 }: {
   defaultMeetingName: string;
 }) {
+  const navigation = useNavigation();
+  const isNavigating = Boolean(navigation.location);
   return (
     <div>
       <label
@@ -116,7 +124,14 @@ function CreateMeetingForm({
           defaultValue={defaultMeetingName}
         />
         <input type="hidden" name="action" value="create-meeting" />
-        <Button type="submit" variant="primary" className="whitespace-nowrap" autoFocus>
+        <Button
+          type="submit"
+          variant="primary"
+          className="whitespace-nowrap"
+          autoFocus
+          disabled={isNavigating}
+          pending={isNavigating}
+        >
           Create Meeting
         </Button>
       </Form>
@@ -126,28 +141,23 @@ function CreateMeetingForm({
 
 function JoinMeetingForm() {
   return (
-    <details className="w-full">
-      <summary className="cursor-pointer text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-        Or join a meeting
-      </summary>
-      <Form method="post" className="mt-4">
-        <div className="space-y-3">
-          <div>
-            <label
-              htmlFor="meetingId"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              Meeting ID
-            </label>
-            <Input id="meetingId" name="meetingId" required />
-            <input name="action" value="join-meeting" type="hidden" />
-          </div>
-          <Button type="submit" variant="secondary" className="w-full">
-            Join Meeting
-          </Button>
+    <Form method="post">
+      <label
+        htmlFor="meetingId"
+        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+      >
+        Meeting ID
+      </label>
+      <div className="grid grid-cols-[1fr_auto] gap-2">
+        <div>
+          <Input id="meetingId" name="meetingId" required />
+          <input name="action" value="join-meeting" type="hidden" />
         </div>
-      </Form>
-    </details>
+        <Button type="submit" variant="primary" className="w-full">
+          Join Meeting
+        </Button>
+      </div>
+    </Form>
   );
 }
 
@@ -167,16 +177,16 @@ function NameForm({ redirectTo }: { redirectTo?: string | null }) {
           >
             Name
           </label>
+          <div className="grid grid-cols-[1fr_auto] gap-2">
+            <Input id="name" name="name" required autoFocus />
+            <Button type="submit" variant="primary" className="w-full">
+              {hasRedirectSearchParam ? "Continue to Meeting" : "Submit"}
+            </Button>
+          </div>
           <input type="hidden" name="action" value="set-name" />
           {redirectTo && (
             <input type="hidden" name="redirectTo" value={redirectTo} />
           )}
-          <Input id="name" name="name" required autoFocus />
-        </div>
-        <div className="pt-2">
-          <Button type="submit" variant="primary" className="w-full">
-            {hasRedirectSearchParam ? "Continue to Meeting" : "Submit"}
-          </Button>
         </div>
       </Form>
     </>
@@ -190,14 +200,26 @@ function MeetingActions({
   name: string;
   newMeetingName: string;
 }) {
+  const [mode, setMode] = useState<"join" | "create">("create");
   return (
-    <div className="mb-8 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+    <>
       <UserHeader name={name} />
       <div className="space-y-4">
-        <CreateMeetingForm defaultMeetingName={newMeetingName} />
-        <JoinMeetingForm />
+        {mode === "join" ? (
+          <JoinMeetingForm />
+        ) : (
+          <CreateMeetingForm defaultMeetingName={newMeetingName} />
+        )}
+        <div className="flex justify-end">
+          <Button
+            variant="ghost"
+            onClick={() => setMode(mode === "join" ? "create" : "join")}
+          >
+            {mode === "join" ? "Create a meeting" : "Join a meeting"}
+          </Button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

@@ -1,4 +1,4 @@
-# CLAUDE.md - Guidelines for Remix-Dyte Project
+# CLAUDE.md - Guidelines for React-Router-Dyte Project
 
 ## Commands
 

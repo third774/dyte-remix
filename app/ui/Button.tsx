@@ -1,6 +1,7 @@
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { Link, type LinkProps } from "react-router";
 import { cn } from "~/utils/cn";
+import { Spinner } from "./Spinner";
 
 // Base styles shared between Button and ButtonLink
 const baseStyles =
@@ -31,7 +32,9 @@ type CommonProps = {
 // Button component
 export interface ButtonProps
   extends ButtonHTMLAttributes<HTMLButtonElement>,
-    CommonProps {}
+    CommonProps {
+  pending?: boolean;
+}
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
@@ -42,6 +45,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       size = "md",
       type = "button",
       disabled = false,
+      pending = false,
       ...props
     },
     ref
@@ -64,7 +68,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled}
         {...props}
       >
-        {children}
+        <span className="flex items-center gap-2">
+          {pending && <Spinner />}
+          {children}
+        </span>
       </button>
     );
   }
