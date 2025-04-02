@@ -186,7 +186,7 @@ function JoinMeetingForm() {
       </label>
       <div className="grid grid-cols-[1fr_auto] gap-2">
         <div>
-          <Input id="meetingId" name="meetingId" required />
+          <Input id="meetingId" name="meetingId" required autoFocus />
           <input name="action" value="join-meeting" type="hidden" />
         </div>
         <Button
