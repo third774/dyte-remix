@@ -1,3 +1,5 @@
+import type { AppLoadContext } from "react-router";
+
 const defaultBaseUrl = "https://api.dyte.io/";
 
 const meetingsPath = "v2/meetings";
@@ -110,18 +112,20 @@ interface Summarization {
 export async function getMeeting(
   titleOrId: string,
   {
-    baseUrl: baseUrl = defaultBaseUrl,
-    Authorization,
-  }: { baseUrl?: string; Authorization: string }
+    cloudflare: {
+      env: { DYTE_AUTH_HEADER, DYTE_BASE_URL },
+    },
+  }: AppLoadContext
 ) {
   const options = {
     method: "GET",
     headers: {
       Accept: "application/json",
-      Authorization,
+      Authorization: DYTE_AUTH_HEADER,
     },
   };
 
+  const baseUrl = DYTE_BASE_URL || defaultBaseUrl;
   const updatedUrl = new URL(baseUrl + meetingsPath);
   if (!updatedUrl.searchParams.has("search")) {
     updatedUrl.searchParams.set("search", titleOrId);
@@ -153,44 +157,49 @@ export interface CreateParticpantData {
 export async function createMeeting(
   title: string,
   {
-    baseUrl = defaultBaseUrl,
-    Authorization,
-  }: { baseUrl?: string; Authorization: string }
+    cloudflare: {
+      env: { DYTE_AUTH_HEADER, DYTE_BASE_URL },
+    },
+  }: AppLoadContext
 ) {
   const options = {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
-      Authorization,
+      Authorization: DYTE_AUTH_HEADER,
     },
     body: JSON.stringify({ title }),
   };
 
+  const baseUrl = DYTE_BASE_URL || defaultBaseUrl;
   const response = await fetch(baseUrl + meetingsPath, options);
   const data = await response.json<CreateMeetingApiResponse>();
   return data.data;
 }
 
-export async function createParticipantToken({
-  name,
-  userId,
-  meetingId,
-  baseUrl = defaultBaseUrl,
-  Authorization,
-}: {
-  name: string;
-  baseUrl?: string;
-  Authorization: string;
-  meetingId: string;
-  userId: string;
-}) {
+export async function createParticipantToken(
+  {
+    name,
+    userId,
+    meetingId,
+  }: {
+    name: string;
+    meetingId: string;
+    userId: string;
+  },
+  {
+    cloudflare: {
+      env: { DYTE_AUTH_HEADER, DYTE_BASE_URL },
+    },
+  }: AppLoadContext
+) {
   const options = {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
-      Authorization,
+      Authorization: DYTE_AUTH_HEADER,
     },
     body: JSON.stringify({
       name,
@@ -199,6 +208,7 @@ export async function createParticipantToken({
     }),
   };
 
+  const baseUrl = DYTE_BASE_URL || defaultBaseUrl;
   const resolvedUrl = new URL(
     `${baseUrl + meetingsPath}/${meetingId}/participants`
   );

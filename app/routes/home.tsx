@@ -47,15 +47,9 @@ export async function action({ request, context }: Route.ActionArgs) {
     if (typeof meetingName !== "string") {
       return new Response("meetingName missing or malformed", { status: 400 });
     }
-    let meeting = await getMeeting(meetingName, {
-      Authorization: context.cloudflare.env.DYTE_AUTH_HEADER,
-      baseUrl: context.cloudflare.env.DYTE_BASE_URL,
-    });
+    let meeting = await getMeeting(meetingName, context);
     if (!meeting) {
-      meeting = await createMeeting(meetingName, {
-        Authorization: context.cloudflare.env.DYTE_AUTH_HEADER,
-        baseUrl: context.cloudflare.env.DYTE_BASE_URL,
-      });
+      meeting = await createMeeting(meetingName, context);
     }
     throw redirect(`/meeting/${meeting.id}`);
   }
@@ -68,10 +62,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       return new Response("meetingId is not a valid uuid", { status: 400 });
     }
 
-    const meeting = await getMeeting(meetingId, {
-      Authorization: context.cloudflare.env.DYTE_AUTH_HEADER,
-      baseUrl: context.cloudflare.env.DYTE_BASE_URL,
-    });
+    const meeting = await getMeeting(meetingId, context);
     if (!meeting) {
       return data({
         meetingNotFound: true,

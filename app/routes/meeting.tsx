@@ -42,15 +42,9 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
     return redirect(`/meeting/${nanoid(8)}`);
   }
 
-  let meeting = await getMeeting(meetingId, {
-    Authorization: context.cloudflare.env.DYTE_AUTH_HEADER,
-    baseUrl: context.cloudflare.env.DYTE_BASE_URL,
-  });
+  let meeting = await getMeeting(meetingId, context);
   if (!meeting) {
-    meeting = await createMeeting(meetingId, {
-      Authorization: context.cloudflare.env.DYTE_AUTH_HEADER,
-      baseUrl: context.cloudflare.env.DYTE_BASE_URL,
-    });
+    meeting = await createMeeting(meetingId, context);
   }
   if (meetingId !== meeting.id) {
     return redirect(`/meeting/${meeting.id}`);
@@ -60,13 +54,14 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
     userId = crypto.randomUUID();
   }
 
-  const participant = await createParticipantToken({
-    name,
-    userId,
-    meetingId: meeting.id,
-    Authorization: context.cloudflare.env.DYTE_AUTH_HEADER,
-    baseUrl: context.cloudflare.env.DYTE_BASE_URL,
-  });
+  const participant = await createParticipantToken(
+    {
+      name,
+      userId,
+      meetingId: meeting.id,
+    },
+    context
+  );
   const token = participant.token;
 
   return data(
