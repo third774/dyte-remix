@@ -12,8 +12,7 @@ export function meta({}: Route.MetaArgs) {
 
 export async function loader({ context, request }: Route.LoaderArgs) {
   const url = new URL(request.url);
-  const redirectTo = url.searchParams.get('redirectTo');
-  
+  const redirectTo = url.searchParams.get("redirectTo");
   return {
     name: await getCookie("name", { context, request }),
     newMeetingName: generateSlug(),
@@ -25,7 +24,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   const formData = await request.formData();
   const action = formData.get("action");
   const redirectTo = formData.get("redirectTo");
-  
+
   if (
     typeof action !== "string" ||
     !["remove-name", "set-name", "join-meeting", "create-meeting"].includes(
@@ -47,7 +46,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     storage.commitSession;
     const session = await storage.getSession(request.headers.get("Cookie"));
     session.set("name", username);
-    
+
     if (typeof redirectTo === "string" && redirectTo) {
       throw redirect(redirectTo, {
         headers: {
@@ -55,7 +54,7 @@ export async function action({ request, context }: Route.ActionArgs) {
         },
       });
     }
-    
+
     throw redirect("/", {
       headers: {
         "Set-Cookie": await storage.commitSession(session),
@@ -108,7 +107,7 @@ function CreateMeetingForm({
         htmlFor="meetingName"
         className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
       >
-        New Meeting Name
+        Meeting Name
       </label>
       <Form method="post" className="grid grid-cols-[1fr_auto] gap-2">
         <Input
@@ -154,7 +153,7 @@ function JoinMeetingForm() {
 
 function NameForm({ redirectTo }: { redirectTo?: string | null }) {
   const hasRedirectSearchParam = Boolean(redirectTo);
-  
+
   return (
     <>
       <p className="text-center text-gray-600 dark:text-gray-300 mb-6">
@@ -170,7 +169,9 @@ function NameForm({ redirectTo }: { redirectTo?: string | null }) {
             Your Name
           </label>
           <input type="hidden" name="action" value="set-name" />
-          {redirectTo && <input type="hidden" name="redirectTo" value={redirectTo} />}
+          {redirectTo && (
+            <input type="hidden" name="redirectTo" value={redirectTo} />
+          )}
           <Input id="name" name="name" required />
         </div>
         <div className="pt-2">

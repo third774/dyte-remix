@@ -156,56 +156,7 @@ export async function createMeeting(
       Accept: "application/json",
       Authorization,
     },
-    body: JSON.stringify({
-      title,
-      record_on_start: false,
-      live_stream_on_start: false,
-      recording_config: {
-        max_seconds: 60,
-        file_name_prefix: "string",
-        video_config: {
-          codec: "H264",
-          width: 1280,
-          height: 720,
-          watermark: {
-            url: "http://example.com",
-            size: { width: 1, height: 1 },
-            position: "left top",
-          },
-          export_file: true,
-        },
-        audio_config: { codec: "AAC", channel: "stereo", export_file: true },
-        storage_config: {
-          type: "aws",
-          access_key: "string",
-          secret: "string",
-          bucket: "string",
-          region: "us-east-1",
-          path: "string",
-          auth_method: "KEY",
-          username: "string",
-          password: "string",
-          host: "string",
-          port: 0,
-          private_key: "string",
-        },
-        dyte_bucket_config: { enabled: true },
-      },
-      ai_config: {
-        transcription: {
-          keywords: ["string"],
-          language: "en-US",
-          profanity_filter: false,
-        },
-        summarization: {
-          word_limit: 500,
-          text_format: "markdown",
-          summary_type: "general",
-        },
-      },
-      persist_chat: false,
-      summarize_on_end: false,
-    }),
+    body: JSON.stringify({ title }),
   };
 
   const response = await fetch(url, options);
@@ -215,6 +166,7 @@ export async function createMeeting(
 
 export async function createParticipantToken({
   name,
+  userId,
   meetingId,
   url = defaultUrl,
   Authorization,
@@ -223,7 +175,9 @@ export async function createParticipantToken({
   url?: string;
   Authorization: string;
   meetingId: string;
+  userId: string;
 }) {
+  console.log({ userId });
   const options = {
     method: "POST",
     headers: {
@@ -233,9 +187,8 @@ export async function createParticipantToken({
     },
     body: JSON.stringify({
       name,
-      picture: "https://i.imgur.com/test.jpg",
       preset_name: "group_call_host",
-      custom_participant_id: "string",
+      custom_participant_id: userId,
     }),
   };
 

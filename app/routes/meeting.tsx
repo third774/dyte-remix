@@ -11,9 +11,9 @@ import DyteClient from "@dytesdk/web-core";
 import { useEffect } from "react";
 import { nanoid } from "nanoid/non-secure";
 import { getCookie } from "~/utils/getCookie.server";
-import { getCookieSessionStorage } from "~/utils/session.server";
 import { DyteMeeting } from "@dytesdk/react-ui-kit";
 import { useNavigate } from "react-router";
+import { getUserId } from "~/utils/getUserId.server";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -27,10 +27,7 @@ export function meta({}: Route.MetaArgs) {
 
 export async function loader({ request, context, params }: Route.LoaderArgs) {
   const name = await getCookie("name", { request, context });
-  let token: string | undefined = await getCookie("dyte-token", {
-    request,
-    context,
-  });
+  const userId = await getUserId({ request, context });
   const { meetingId } = params;
   if (!meetingId) {
     return redirect("/");
@@ -55,32 +52,15 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
     return redirect(`/meeting/${meeting.id}`);
   }
 
-  const storage = getCookieSessionStorage(context);
-  const session = await storage.getSession();
-  if (!token) {
-    const participant = await createParticipantToken({
-      name,
-      meetingId: meeting.id,
-      Authorization: context.cloudflare.env.DYTE_AUTH_HEADER,
-    });
-    token = participant.token;
-    session.set("dyte-token", participant.token);
-  }
+  const participant = await createParticipantToken({
+    name,
+    userId,
+    meetingId: meeting.id,
+    Authorization: context.cloudflare.env.DYTE_AUTH_HEADER,
+  });
+  const token = participant.token;
 
-  const expires = new Date();
-  expires.setDate(expires.getDate() + 1);
-
-  return data(
-    { meeting, token },
-    {
-      headers: {
-        Cookie: await storage.commitSession(session, {
-          path: `/meeting/${meetingId}`,
-          expires,
-        }),
-      },
-    }
-  );
+  return data({ meeting, token });
 }
 
 export default function Meeting({ loaderData }: Route.ComponentProps) {
