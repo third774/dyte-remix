@@ -177,7 +177,6 @@ export async function createParticipantToken({
   meetingId: string;
   userId: string;
 }) {
-  console.log({ userId });
   const options = {
     method: "POST",
     headers: {
