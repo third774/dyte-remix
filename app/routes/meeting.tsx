@@ -8,7 +8,7 @@ import { data, redirect } from "react-router";
 
 import { useDyteClient } from "@dytesdk/react-web-core";
 import DyteClient from "@dytesdk/web-core";
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect } from "react";
 import { nanoid } from "nanoid/non-secure";
 import { DyteMeeting } from "@dytesdk/react-ui-kit";
 import { useNavigate } from "react-router";
@@ -122,12 +122,4 @@ function useNavigateOnLeave(to: string, meeting?: DyteClient) {
       meeting.self.off("roomLeft", handler);
     };
   }, [to, meeting]);
-}
-
-function useIsClientSide() {
-  return useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  );
 }
