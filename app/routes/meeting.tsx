@@ -9,7 +9,6 @@ import { data, redirect } from "react-router";
 import { useDyteClient } from "@dytesdk/react-web-core";
 import DyteClient from "@dytesdk/web-core";
 import { useEffect } from "react";
-import { nanoid } from "nanoid/non-secure";
 import { DyteMeeting } from "@dytesdk/react-ui-kit";
 import { useNavigate } from "react-router";
 import { getCookieSessionStorage } from "~/utils/session.server";
@@ -37,9 +36,6 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
 
   if (!name) {
     return redirect(`/?redirectTo=/meeting/${meetingId}`);
-  }
-  if (meetingId === "new") {
-    return redirect(`/meeting/${nanoid(8)}`);
   }
 
   let meeting = await getMeeting(meetingId, context);
