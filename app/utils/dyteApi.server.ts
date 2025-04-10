@@ -155,7 +155,15 @@ export interface CreateParticpantData {
 }
 
 export async function createMeeting(
-  title: string,
+  meeting: {
+    title: string;
+    record_on_start?: boolean;
+    recording_config?: {
+      live_streaming_config?: {
+        rtmp_url: string;
+      };
+    };
+  },
   {
     cloudflare: {
       env: { DYTE_AUTH_HEADER, DYTE_BASE_URL },
@@ -169,7 +177,7 @@ export async function createMeeting(
       Accept: "application/json",
       Authorization: DYTE_AUTH_HEADER,
     },
-    body: JSON.stringify({ title }),
+    body: JSON.stringify(meeting),
   };
 
   const baseUrl = DYTE_BASE_URL || defaultBaseUrl;
@@ -183,10 +191,12 @@ export async function createParticipantToken(
     name,
     userId,
     meetingId,
+    preset,
   }: {
     name: string;
     meetingId: string;
     userId: string;
+    preset: string;
   },
   {
     cloudflare: {
@@ -203,7 +213,7 @@ export async function createParticipantToken(
     },
     body: JSON.stringify({
       name,
-      preset_name: "group_call_host",
+      preset_name: preset,
       custom_participant_id: userId,
     }),
   };

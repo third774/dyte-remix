@@ -13,6 +13,7 @@ import { DyteMeeting } from "@dytesdk/react-ui-kit";
 import { useNavigate } from "react-router";
 import { getCookieSessionStorage } from "~/utils/session.server";
 import { isValidUUID } from "~/utils/isValidUuid";
+import { getMeetingMetadata } from "~/utils/meetingMetadata";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -25,6 +26,7 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export async function loader({ request, context, params }: Route.LoaderArgs) {
+  const url = new URL(request.url);
   const session = getCookieSessionStorage(context);
   const storage = await session.getSession(request.headers.get("Cookie"));
   const name: string | undefined = await storage.get("name");
@@ -40,21 +42,30 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
 
   let meeting = await getMeeting(meetingId, context);
   if (!meeting) {
-    meeting = await createMeeting(meetingId, context);
+    meeting = await createMeeting({ title: meetingId }, context);
   }
   if (meetingId !== meeting.id) {
     return redirect(`/meeting/${meeting.id}`);
   }
 
+  const meetingMetadata = await getMeetingMetadata(meetingId, context);
+  const hostToken = url.searchParams.get("hostToken");
+
   if (!userId) {
     userId = crypto.randomUUID();
   }
+
+  const preset =
+    hostToken && meetingMetadata && hostToken === meetingMetadata.hostToken
+      ? "group_call_host"
+      : "group_call_participant";
 
   const participant = await createParticipantToken(
     {
       name,
       userId,
       meetingId: meeting.id,
+      preset,
     },
     context
   );

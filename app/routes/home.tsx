@@ -14,6 +14,7 @@ import { generateSlug } from "random-word-slugs";
 import { useState } from "react";
 import { createMeeting, getMeeting } from "~/utils/dyteApi.server";
 import { isValidUUID } from "~/utils/isValidUuid";
+import { putMeetingMetadata } from "~/utils/meetingMetadata";
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Dyte React Router Demo" }];
@@ -49,7 +50,14 @@ export async function action({ request, context }: Route.ActionArgs) {
     }
     let meeting = await getMeeting(meetingName, context);
     if (!meeting) {
-      meeting = await createMeeting(meetingName, context);
+      meeting = await createMeeting({ title: meetingName }, context);
+      const hostToken = crypto.randomUUID();
+      await putMeetingMetadata(
+        meeting.id,
+        { createdBy: "", hostToken },
+        context
+      );
+      throw redirect(`/meeting/${meeting.id}?hostToken=${hostToken}`);
     }
     throw redirect(`/meeting/${meeting.id}`);
   }
