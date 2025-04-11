@@ -13,11 +13,22 @@ import { DyteMeeting } from "@dytesdk/react-ui-kit";
 import { useNavigate } from "react-router";
 import { getCookieSessionStorage } from "~/utils/session.server";
 import { isValidUUID } from "~/utils/isValidUuid";
-import { getMeetingMetadata } from "~/utils/meetingMetadata";
+import { getMeetingMetadata, type MeetingType } from "~/utils/meetingMetadata";
 
-export function meta({}: Route.MetaArgs) {
+const presetMap = {
+  meeting: {
+    host: "group_call_host",
+    participant: "group_call_participant",
+  },
+  webinar: {
+    host: "webinar_presenter",
+    participant: "webinar_viewer",
+  },
+} satisfies Record<MeetingType, { host: string; participant: string }>;
+
+export function meta({ data }: Route.MetaArgs) {
   return [
-    { title: "Dyte Meeting Room" },
+    { title: data.meeting.title },
     {
       name: "description",
       content: "Join your video conference with Dyte and React Router",
@@ -55,17 +66,19 @@ export async function loader({ request, context, params }: Route.LoaderArgs) {
     userId = crypto.randomUUID();
   }
 
-  const preset =
+  const role =
     hostToken && meetingMetadata && hostToken === meetingMetadata.hostToken
-      ? "group_call_host"
-      : "group_call_participant";
+      ? "host"
+      : "participant";
+
+  const meetingType = meetingMetadata?.type ?? "meeting";
 
   const participant = await createParticipantToken(
     {
       name,
       userId,
       meetingId: meeting.id,
-      preset,
+      preset: presetMap[meetingType][role],
     },
     context
   );

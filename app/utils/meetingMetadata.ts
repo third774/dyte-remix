@@ -1,8 +1,17 @@
 import type { AppLoadContext } from "react-router";
 
+export const validMeetingTypes = ["meeting", "webinar"] as const;
+
+export type MeetingType = (typeof validMeetingTypes)[number];
+
+export function isValidMeetingType(value: unknown): value is MeetingType {
+  return validMeetingTypes.includes(value as any);
+}
+
 export interface MeetingMetadata {
   createdBy: string;
   hostToken: string;
+  type: MeetingType;
 }
 
 export async function getMeetingMetadata(

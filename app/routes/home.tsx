@@ -14,10 +14,16 @@ import { generateSlug } from "random-word-slugs";
 import { useState } from "react";
 import { createMeeting, getMeeting } from "~/utils/dyteApi.server";
 import { isValidUUID } from "~/utils/isValidUuid";
-import { putMeetingMetadata } from "~/utils/meetingMetadata";
+import {
+  isValidMeetingType,
+  putMeetingMetadata,
+  validMeetingTypes,
+} from "~/utils/meetingMetadata";
+import { Select } from "~/ui/Select";
+import invariant from "tiny-invariant";
 
-export function meta({}: Route.MetaArgs) {
-  return [{ title: "Dyte React Router Demo" }];
+export function meta({ data }: Route.MetaArgs) {
+  return [{ title: data.appName }];
 }
 
 export async function loader({ context, request }: Route.LoaderArgs) {
@@ -27,6 +33,7 @@ export async function loader({ context, request }: Route.LoaderArgs) {
     name: await getCookie("name", { context, request }),
     newMeetingName: generateSlug(),
     redirectTo,
+    appName: context.cloudflare.env.APP_NAME ?? "Dyte React Router Demo",
   };
 }
 
@@ -45,16 +52,42 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
   if (action === "create-meeting") {
     const meetingName = formData.get("meetingName");
+    const type = formData.get("type");
+    const rtmp = formData.get("rtmp");
+
     if (typeof meetingName !== "string") {
       return new Response("meetingName missing or malformed", { status: 400 });
     }
+    if (!isValidMeetingType(type)) {
+      return new Response(
+        `type must be one of: ${validMeetingTypes.join(", ")}`,
+        { status: 400 }
+      );
+    }
+    if (typeof rtmp !== "string" && rtmp !== null) {
+      return new Response("rtmp malformed", { status: 400 });
+    }
     let meeting = await getMeeting(meetingName, context);
     if (!meeting) {
-      meeting = await createMeeting({ title: meetingName }, context);
+      meeting = await createMeeting(
+        {
+          title: meetingName,
+          ...(rtmp
+            ? {
+                recording_config: {
+                  live_streaming_config: {
+                    rtmp_url: rtmp,
+                  },
+                },
+              }
+            : {}),
+        },
+        context
+      );
       const hostToken = crypto.randomUUID();
       await putMeetingMetadata(
         meeting.id,
-        { createdBy: "", hostToken },
+        { createdBy: "", hostToken, type },
         context
       );
       throw redirect(`/meeting/${meeting.id}?hostToken=${hostToken}`);
@@ -142,18 +175,41 @@ function CreateMeetingForm({
   const isNavigating = Boolean(navigation.location);
   return (
     <div>
-      <label
-        htmlFor="meetingName"
-        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-      >
-        Meeting Name
-      </label>
-      <Form method="post" className="grid grid-cols-[1fr_auto] gap-2">
-        <Input
-          id="meetingName"
-          name="meetingName"
-          defaultValue={defaultMeetingName}
-        />
+      <Form method="post" className="space-y-4">
+        <div>
+          <label
+            htmlFor="meetingName"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
+            Meeting Name
+          </label>
+          <Input
+            id="meetingName"
+            name="meetingName"
+            defaultValue={defaultMeetingName}
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="type"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
+            Meeting Type
+          </label>
+          <Select id="type" name="type">
+            <option value="meeting">Meeting</option>
+            <option value="webinar">Webinar</option>
+          </Select>
+        </div>
+        <div>
+          <label
+            htmlFor="rtmp"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
+            RTMP URL (optional)
+          </label>
+          <Input id="rtmp" name="rtmp" />
+        </div>
         <input type="hidden" name="action" value="create-meeting" />
         <Button
           type="submit"
